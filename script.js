@@ -569,4 +569,390 @@ if (studentLoginForm) {
 }
 
 // ===============================
-// EX
+// EXAM PAGE
+// ===============================
+
+const questionText =
+    document.getElementById("questionText");
+
+if (questionText) {
+
+    const exam =
+        getExams().find(function(item) {
+
+            return String(item.id) ===
+                localStorage.getItem("currentExamId");
+        });
+
+    const student =
+        JSON.parse(
+            localStorage.getItem("currentStudent") || "null"
+        );
+
+    if (!exam || !student) {
+
+        window.location.href =
+            "student-login.html";
+
+    } else {
+
+        let currentIndex = 0;
+
+        const answers =
+            new Array(exam.questions.length).fill(null);
+
+        let seconds =
+            exam.duration * 60;
+
+        let finished = false;
+
+        const examTitle =
+            document.getElementById("examTitle");
+
+        const examSubject =
+            document.getElementById("examSubject");
+
+        const studentDisplay =
+            document.getElementById("studentDisplay");
+
+        const totalQuestions =
+            document.getElementById("totalQuestions");
+
+        const currentQuestion =
+            document.getElementById("currentQuestion");
+
+        const questionNumber =
+            document.getElementById("questionNumber");
+
+        const options =
+            document.getElementById("options");
+
+        const questionNumbers =
+            document.getElementById("questionNumbers");
+
+        const previousButton =
+            document.getElementById("previousBtn");
+
+        const nextButton =
+            document.getElementById("nextBtn");
+
+        const submitButton =
+            document.getElementById("submitExam");
+
+        const timer =
+            document.getElementById("timer");
+
+        examTitle.textContent =
+            exam.name;
+
+        examSubject.textContent =
+            exam.subject;
+
+        studentDisplay.textContent =
+            student.name;
+
+        totalQuestions.textContent =
+            exam.questions.length;
+
+        questionNumbers.innerHTML =
+            exam.questions.map(function(_, index) {
+
+                return `
+                    <button data-i="${index}">
+                        ${index + 1}
+                    </button>
+                `;
+
+            }).join("");
+
+        questionNumbers
+            .querySelectorAll("button")
+            .forEach(function(button) {
+
+                button.onclick = function() {
+
+                    currentIndex =
+                        Number(button.dataset.i);
+
+                    loadQuestion();
+                };
+            });
+
+        function loadQuestion() {
+
+            const question =
+                exam.questions[currentIndex];
+
+            currentQuestion.textContent =
+                currentIndex + 1;
+
+            questionNumber.textContent =
+                currentIndex + 1;
+
+            questionText.textContent =
+                question.question;
+
+            options.innerHTML =
+                question.options.map(function(option, index) {
+
+                    const letter =
+                        String.fromCharCode(65 + index);
+
+                    return `
+                        <label class="option ${
+                            answers[currentIndex] === letter
+                                ? "selected"
+                                : ""
+                        }">
+
+                            <input
+                                type="radio"
+                                name="answer"
+                                value="${letter}"
+                                ${
+                                    answers[currentIndex] === letter
+                                        ? "checked"
+                                        : ""
+                                }
+                            >
+
+                            <b>${letter}</b>
+
+                            <span>
+                                ${esc(option)}
+                            </span>
+
+                        </label>
+                    `;
+
+                }).join("");
+
+            options
+                .querySelectorAll("input")
+                .forEach(function(radio) {
+
+                    radio.onchange = function() {
+
+                        answers[currentIndex] =
+                            radio.value;
+
+                        loadQuestion();
+                    };
+                });
+
+            questionNumbers
+                .querySelectorAll("button")
+                .forEach(function(button, index) {
+
+                    button.classList.toggle(
+                        "active",
+                        index === currentIndex
+                    );
+
+                    button.classList.toggle(
+                        "answered",
+                        !!answers[index]
+                    );
+                });
+
+            previousButton.disabled =
+                currentIndex === 0;
+
+            nextButton.textContent =
+                currentIndex === exam.questions.length - 1
+                    ? "Finish"
+                    : "Next →";
+        }
+
+        function updateTimer() {
+
+            const minutes =
+                Math.floor(seconds / 60);
+
+            const remainingSeconds =
+                seconds % 60;
+
+            timer.textContent =
+                `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+
+            if (seconds <= 0) {
+
+                finishExam();
+
+                return;
+            }
+
+            seconds--;
+        }
+
+        const timerInterval =
+            setInterval(updateTimer, 1000);
+
+        updateTimer();
+
+        loadQuestion();
+
+        previousButton.onclick =
+            function() {
+
+                if (currentIndex > 0) {
+
+                    currentIndex--;
+
+                    loadQuestion();
+                }
+            };
+
+        nextButton.onclick =
+            function() {
+
+                if (
+                    currentIndex <
+                    exam.questions.length - 1
+                ) {
+
+                    currentIndex++;
+
+                    loadQuestion();
+
+                } else {
+
+                    finishExam();
+                }
+            };
+
+        submitButton.onclick =
+            function() {
+
+                if (
+                    confirm(
+                        "Submit your examination now?"
+                    )
+                ) {
+
+                    finishExam();
+                }
+            };
+
+        function finishExam() {
+
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+
+            clearInterval(timerInterval);
+
+            let correct = 0;
+
+            exam.questions.forEach(
+                function(question, index) {
+
+                    if (
+                        answers[index] ===
+                        question.answer
+                    ) {
+                        correct++;
+                    }
+                }
+            );
+
+            const result = {
+
+                id: Date.now(),
+
+                studentName:
+                    student.name,
+
+                studentId:
+                    student.id,
+
+                examName:
+                    exam.name,
+
+                score:
+                    Math.round(
+                        correct /
+                        exam.questions.length *
+                        100
+                    ),
+
+                correct:
+                    correct,
+
+                total:
+                    exam.questions.length,
+
+                date:
+                    new Date().toISOString()
+            };
+
+            const results =
+                getResults();
+
+            results.push(result);
+
+            saveResults(results);
+
+            localStorage.setItem(
+                "lastResult",
+                JSON.stringify(result)
+            );
+
+            window.location.href =
+                "result.html";
+        }
+    }
+}
+
+// ===============================
+// RESULT PAGE
+// ===============================
+
+const resultScore =
+    document.getElementById("resultScore");
+
+if (resultScore) {
+
+    const result =
+        JSON.parse(
+            localStorage.getItem("lastResult") ||
+            "null"
+        );
+
+    if (!result) {
+
+        window.location.href =
+            "index.html";
+
+    } else {
+
+        const resultTitle =
+            document.getElementById("resultTitle");
+
+        const resultStudent =
+            document.getElementById("resultStudent");
+
+        const resultCorrect =
+            document.getElementById("resultCorrect");
+
+        const resultTotal =
+            document.getElementById("resultTotal");
+
+        resultTitle.textContent =
+            result.examName;
+
+        resultStudent.textContent =
+            `${result.studentName} · ${result.studentId}`;
+
+        resultScore.textContent =
+            `${result.score}%`;
+
+        resultCorrect.textContent =
+            result.correct;
+
+        resultTotal.textContent =
+            result.total;
+    }
+}
