@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Dashboard | ExamPro</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="dashboard-header"><a class="logo" href="index.html"><span>EXAM</span>PRO</a><div class="admin-profile"><span>👤 Administrator</span><button id="adminLogout" class="outline-btn">Logout</button></div></header>
+<main class="dashboard">
+<div class="dashboard-heading"><div><span>ADMINISTRATION</span><h1>Dashboard</h1><p>Manage examinations, questions and student results.</p></div><button id="focusCreate" class="primary-btn">+ Create New Exam</button></div>
+<section class="dashboard-stats">
+<div class="stat-card"><span>📝</span><div><strong id="totalExams">0</strong><p>Total Exams</p></div></div>
+<div class="stat-card"><span>❓</span><div><strong id="totalQuestions">0</strong><p>Total Questions</p></div></div>
+<div class="stat-card"><span>👨‍🎓</span><div><strong id="totalStudents">0</strong><p>Students</p></div></div>
+<div class="stat-card"><span>📊</span><div><strong id="totalResults">0</strong><p>Results</p></div></div>
+</section>
+<section class="dashboard-section" id="createExamSection">
+<div class="section-title"><span>EXAMINATION SETUP</span><h2>Create New Examination</h2><p>Enter the basic information for your examination.</p></div>
+<form id="createExamForm" class="exam-form">
+<div class="form-row">
+<label>Examination Name<input id="examName" placeholder="e.g. MTH102 Mid-Semester Exam" required></label>
+<label>Subject<input id="examSubject" placeholder="e.g. Mathematics" required></label>
+</div>
+<div class="form-row">
+<label>Exam Code<input id="examCode" placeholder="e.g. MTH1022026" required></label>
+<label>Duration (minutes)<input id="examDuration" type="number" min="1" placeholder="e.g. 60" required></label>
+</div>
+<label>Number of Questions<input id="numberOfQuestions" type="number" min="1" max="200" placeholder="e.g. 50" required></label>
+<button class="primary-btn" type="submit">Create Examination</button>
+</form>
+</section>
+<section class="dashboard-section">
+<div class="section-title"><span>YOUR EXAMINATIONS</span><h2>Manage Exams</h2><p>View, add questions or delete examinations.</p></div>
+<div id="examList" class="exam-list"></div>
+</section>
+<section class="dashboard-section hidden" id="questionBuilderSection">
+<div class="section-title"><span>QUESTION MANAGEMENT</span><h2>Add Examination Questions</h2><p id="builderSubtitle">Create the questions and correct answers.</p></div>
+<form id="questionBuilderForm"><div id="questionFields"></div><button class="primary-btn" type="submit">Save Questions & Publish Exam</button></form>
+</section>
+<section class="dashboard-section">
+<div class="section-title"><span>STUDENT RESULTS</span><h2>Recent Results</h2></div>
+<div id="resultsList" class="results-list"></div>
+</section>
+</main>
+<script src="script.js"></script>
+</body>
+</html>

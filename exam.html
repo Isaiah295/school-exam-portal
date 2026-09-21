@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Online Examination | ExamPro</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="exam-header"><a class="logo" href="index.html"><span>EXAM</span>PRO</a><div class="exam-title"><h2 id="examTitle">Computer Based Test</h2><p id="examSubject">Online Examination</p></div><div class="timer-box"><span>Time Remaining</span><strong id="timer">--:--</strong></div></header>
+<main class="exam-container">
+<div class="exam-top"><div><span>Student</span><strong id="studentDisplay">Student</strong></div><div><span>Question</span><strong><span id="currentQuestion">1</span> / <span id="totalQuestions">0</span></strong></div></div>
+<section class="question-card"><div class="question-label">Question <span id="questionNumber">1</span></div><h1 id="questionText">Loading question...</h1><div id="options" class="options"></div></section>
+<div class="exam-navigation"><button id="previousBtn" class="nav-btn secondary">← Previous</button><button id="nextBtn" class="nav-btn">Next →</button></div>
+<div class="question-navigation"><h3>Questions</h3><div id="questionNumbers" class="question-numbers"></div></div>
+<div class="submit-area"><button id="submitExam" class="submit-exam">Submit Examination</button></div>
+</main>
+<script src="script.js"></script>
+</body>
+</html>
