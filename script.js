@@ -1,20 +1,572 @@
-function getExams(){return JSON.parse(localStorage.getItem("exams")||"[]")}function saveExams(x){localStorage.setItem("exams",JSON.stringify(x))}function getResults(){return JSON.parse(localStorage.getItem("results")||"[]")}function saveResults(x){localStorage.setItem("results",JSON.stringify(x))}
-function esc(x){return String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}function attr(x){return esc(x)}
-const adminLoginForm=document.getElementById("adminLoginForm");if(adminLoginForm)adminLoginForm.onsubmit=e=>{e.preventDefault();let u=adminUsername.value.trim(),p=adminPassword.value;if(u==="admin"&&p==="12345"){localStorage.setItem("adminLoggedIn","true");location.href="admin-dashboard.html"}else alert("Invalid username or password.")};
-const createExamForm=document.getElementById("createExamForm");if(createExamForm&&localStorage.getItem("adminLoggedIn")!=="true")location.href="admin-login.html";
-const logout=document.getElementById("adminLogout");if(logout)logout.onclick=()=>{localStorage.removeItem("adminLoggedIn");location.href="admin-login.html"};
-const examList=document.getElementById("examList"),builder=document.getElementById("questionBuilderSection"),fields=document.getElementById("questionFields");let editingId=null;
-function dashboard(){let es=getExams(),rs=getResults();let set=(id,v)=>{let e=document.getElementById(id);if(e)e.textContent=v};set("totalExams",es.length);set("totalQuestions",es.reduce((n,e)=>n+(e.questions?.length||0),0));set("totalStudents",new Set(rs.map(r=>r.studentId)).size);set("totalResults",rs.length);
-if(examList){examList.innerHTML=es.length?es.map(e=>`<div class="exam-card"><div><h3>${esc(e.name)}</h3><div class="exam-meta">${esc(e.subject)} · Code: ${esc(e.code)} · ${e.duration} minutes · ${e.questions.length}/${e.numberOfQuestions} questions</div></div><div class="exam-actions"><button class="small-btn" data-q="${e.id}">Questions</button><button class="small-btn danger" data-d="${e.id}">Delete</button></div></div>`).join(""):'<div class="empty-state">📝<br><b>No examinations yet</b><br>Create your first examination above.</div>';examList.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>openBuilder(+b.dataset.q));examList.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>delExam(+b.dataset.d))}}
+// ===============================
+// EXAMPRO - MAIN JAVASCRIPT
+// ===============================
+
+// ---------- STORAGE ----------
+function getExams() {
+    return JSON.parse(localStorage.getItem("exams") || "[]");
 }
-function openBuilder(id){let e=getExams().find(x=>x.id===id);if(!e)return;editingId=id;builder.classList.remove("hidden");document.getElementById("builderSubtitle").textContent=`${e.name} — add ${e.numberOfQuestions} question(s).`;fields.innerHTML="";for(let i=0;i<e.numberOfQuestions;i++){let q=e.questions[i]||{question:"",options:["","","",""],answer:""};fields.insertAdjacentHTML("beforeend",`<div class="question-builder-card"><h3>Question ${i+1}</h3><label>Question<input class="question-input" value="${attr(q.question)}" required></label><div class="form-row"><label>Option A<input class="option-a" value="${attr(q.options[0])}" required></label><label>Option B<input class="option-b" value="${attr(q.options[1])}" required></label></div><div class="form-row"><label>Option C<input class="option-c" value="${attr(q.options[2])}" required></label><label>Option D<input class="option-d" value="${attr(q.options[3])}" required></label></div><label>Correct Answer<select class="correct-answer" required><option value="">Select correct answer</option>${["A","B","C","D"].map(x=>`<option value="${x}" ${q.answer===x?"selected":""}>${x}</option>`).join("")}</select></label></div>`)}builder.scrollIntoView({behavior:"smooth"})}
-function delExam(id){if(confirm("Delete this examination?")){saveExams(getExams().filter(e=>e.id!==id));dashboard()}}
-if(createExamForm)createExamForm.onsubmit=e=>{e.preventDefault();let code=document.getElementById("examCode").value.trim().toUpperCase(),es=getExams();if(es.some(x=>x.code===code)){alert("That exam code already exists.");return}let ex={id:Date.now(),name:examName.value.trim(),subject:examSubject.value.trim(),code,duration:+examDuration.value,numberOfQuestions:+numberOfQuestions.value,questions:[]};es.push(ex);saveExams(es);createExamForm.reset();dashboard();openBuilder(ex.id)};
-const qform=document.getElementById("questionBuilderForm");if(qform)qform.onsubmit=e=>{e.preventDefault();let es=getExams(),ex=es.find(x=>x.id===editingId);let cards=[...fields.querySelectorAll(".question-builder-card")];ex.questions=cards.map(c=>({question:c.querySelector(".question-input").value.trim(),options:[".option-a",".option-b",".option-c",".option-d"].map(s=>c.querySelector(s).value.trim()),answer:c.querySelector(".correct-answer").value}));saveExams(es);alert("Questions saved. The examination is ready.");builder.classList.add("hidden");dashboard()};
-const focus=document.getElementById("focusCreate");if(focus)focus.onclick=()=>document.getElementById("createExamSection").scrollIntoView({behavior:"smooth"});if(examList)dashboard();
 
-const studentLoginForm=document.getElementById("studentLoginForm");if(studentLoginForm)studentLoginForm.onsubmit=e=>{e.preventDefault();let code=document.getElementById("examCode").value.trim().toUpperCase(),ex=getExams().find(x=>x.code===code);if(!ex){alert("Exam code not found.");return}if(ex.questions.length!==ex.numberOfQuestions){alert("This examination is not ready yet. Please contact the administrator.");return}localStorage.setItem("currentStudent",JSON.stringify({name:studentName.value.trim(),id:studentId.value.trim()}));localStorage.setItem("currentExamId",ex.id);location.href="exam.html"};
+function saveExams(exams) {
+    localStorage.setItem("exams", JSON.stringify(exams));
+}
 
-const questionText=document.getElementById("questionText");if(questionText){let ex=getExams().find(x=>String(x.id)===localStorage.getItem("currentExamId")),st=JSON.parse(localStorage.getItem("currentStudent")||"null");if(!ex||!st){location.href="student-login.html"}else{let i=0,a=new Array(ex.questions.length).fill(null),seconds=ex.duration*60,done=false;document.getElementById("examTitle").textContent=ex.name;document.getElementById("examSubject").textContent=ex.subject;document.getElementById("studentDisplay").textContent=st.name;document.getElementById("totalQuestions").textContent=ex.questions.length;let nums=document.getElementById("questionNumbers"),opts=document.getElementById("options");nums.innerHTML=ex.questions.map((_,n)=>`<button data-i="${n}">${n+1}</button>`).join("");nums.querySelectorAll("button").forEach(b=>b.onclick=()=>{i=+b.dataset.i;load()});function load(){let q=ex.questions[i];currentQuestion.textContent=i+1;questionNumber.textContent=i+1;questionText.textContent=q.question;opts.innerHTML=q.options.map((o,n)=>{let l=String.fromCharCode(65+n);return `<label class="option ${a[i]===l?"selected":""}"><input type="radio" name="answer" value="${l}" ${a[i]===l?"checked":""}><b>${l}</b><span>${esc(o)}</span></label>`}).join("");opts.querySelectorAll("input").forEach(r=>r.onchange=()=>{a[i]=r.value;load()});nums.querySelectorAll("button").forEach((b,n)=>{b.classList.toggle("active",n===i);b.classList.toggle("answered",!!a[n])});previousBtn.disabled=i===0;nextBtn.textContent=i===ex.questions.length-1?"Finish":"Next →"}function tick(){let m=Math.floor(seconds/60),s=seconds%60;timer.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;if(seconds<=0)finish();seconds--}let timerInt=setInterval(tick,1000);tick();load();previousBtn.onclick=()=>{if(i>0){i--;load()}};nextBtn.onclick=()=>{if(i<ex.questions.length-1){i++;load()}else finish()};submitExam.onclick=()=>{if(confirm("Submit your examination now?"))finish()};function finish(){if(done)return;done=true;clearInterval(timerInt);let correct=ex.questions.reduce((n,q,k)=>n+(a[k]===q.answer?1:0),0),r={id:Date.now(),studentName:st.name,studentId:st.id,examName:ex.name,score:Math.round(correct/ex.questions.length*100),correct,total:ex.questions.length,date:new Date().toISOString()};let rs=getResults();rs.push(r);saveResults(rs);localStorage.setItem("lastResult",JSON.stringify(r));location.href="result.html"}}}
+function getResults() {
+    return JSON.parse(localStorage.getItem("results") || "[]");
+}
 
-const resultScore=document.getElementById("resultScore");if(resultScore){let r=JSON.parse(localStorage.getItem("lastResult")||"null");if(!r)location.href="index.html";else{resultTitle.textContent=r.examName;resultStudent.textContent=`${r.studentName} · ${r.studentId}`;resultScore.textContent=`${r.score}%`;resultCorrect.textContent=r.correct;resultTotal.textContent=r.total}}
+function saveResults(results) {
+    localStorage.setItem("results", JSON.stringify(results));
+}
+
+// ---------- SECURITY HELPERS ----------
+function esc(value) {
+    return String(value ?? "").replace(/[&<>"']/g, function(char) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        }[char];
+    });
+}
+
+function attr(value) {
+    return esc(value);
+}
+
+// ===============================
+// ADMIN LOGIN
+// ===============================
+
+const adminLoginForm = document.getElementById("adminLoginForm");
+
+if (adminLoginForm) {
+    adminLoginForm.onsubmit = function(e) {
+        e.preventDefault();
+
+        const username = document.getElementById("adminUsername").value.trim();
+        const password = document.getElementById("adminPassword").value;
+
+        if (username === "admin" && password === "12345") {
+            localStorage.setItem("adminLoggedIn", "true");
+            window.location.href = "admin-dashboard.html";
+        } else {
+            alert("Invalid username or password.");
+        }
+    };
+}
+
+// ===============================
+// ADMIN DASHBOARD
+// ===============================
+
+const createExamForm = document.getElementById("createExamForm");
+
+if (
+    createExamForm &&
+    localStorage.getItem("adminLoggedIn") !== "true"
+) {
+    window.location.href = "admin-login.html";
+}
+
+// ---------- LOGOUT ----------
+
+const logoutButton = document.getElementById("adminLogout");
+
+if (logoutButton) {
+    logoutButton.onclick = function() {
+        localStorage.removeItem("adminLoggedIn");
+        window.location.href = "admin-login.html";
+    };
+}
+
+// ---------- DASHBOARD ELEMENTS ----------
+
+const examList = document.getElementById("examList");
+const builder = document.getElementById("questionBuilderSection");
+const fields = document.getElementById("questionFields");
+
+let editingId = null;
+
+// ---------- DASHBOARD ----------
+
+function dashboard() {
+    const exams = getExams();
+    const results = getResults();
+
+    function setText(id, value) {
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    setText("totalExams", exams.length);
+
+    setText(
+        "totalQuestions",
+        exams.reduce(function(total, exam) {
+            return total + (exam.questions?.length || 0);
+        }, 0)
+    );
+
+    setText(
+        "totalStudents",
+        new Set(results.map(function(result) {
+            return result.studentId;
+        })).size
+    );
+
+    setText("totalResults", results.length);
+
+    if (examList) {
+        if (exams.length) {
+            examList.innerHTML = exams.map(function(exam) {
+                return `
+                    <div class="exam-card">
+                        <div>
+                            <h3>${esc(exam.name)}</h3>
+
+                            <div class="exam-meta">
+                                ${esc(exam.subject)}
+                                · Code: ${esc(exam.code)}
+                                · ${exam.duration} minutes
+                                · ${exam.questions.length}/${exam.numberOfQuestions} questions
+                            </div>
+                        </div>
+
+                        <div class="exam-actions">
+                            <button class="small-btn" data-q="${exam.id}">
+                                Questions
+                            </button>
+
+                            <button class="small-btn danger" data-d="${exam.id}">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        } else {
+            examList.innerHTML = `
+                <div class="empty-state">
+                    📝<br>
+                    <b>No examinations yet</b><br>
+                    Create your first examination above.
+                </div>
+            `;
+        }
+
+        examList.querySelectorAll("[data-q]").forEach(function(button) {
+            button.onclick = function() {
+                openBuilder(Number(button.dataset.q));
+            };
+        });
+
+        examList.querySelectorAll("[data-d]").forEach(function(button) {
+            button.onclick = function() {
+                deleteExam(Number(button.dataset.d));
+            };
+        });
+    }
+}
+
+// ===============================
+// QUESTION BUILDER
+// ===============================
+
+function openBuilder(id) {
+    const exams = getExams();
+
+    const exam = exams.find(function(item) {
+        return item.id === id;
+    });
+
+    if (!exam) {
+        return;
+    }
+
+    editingId = id;
+
+    if (builder) {
+        builder.classList.remove("hidden");
+    }
+
+    const builderSubtitle =
+        document.getElementById("builderSubtitle");
+
+    if (builderSubtitle) {
+        builderSubtitle.textContent =
+            `${exam.name} — add ${exam.numberOfQuestions} question(s).`;
+    }
+
+    if (!fields) {
+        return;
+    }
+
+    fields.innerHTML = "";
+
+    for (let i = 0; i < exam.numberOfQuestions; i++) {
+
+        const question = exam.questions[i] || {
+            question: "",
+            options: ["", "", "", ""],
+            answer: ""
+        };
+
+        fields.insertAdjacentHTML(
+            "beforeend",
+            `
+            <div class="question-builder-card">
+
+                <h3>Question ${i + 1}</h3>
+
+                <label>
+                    Question
+                    <input
+                        class="question-input"
+                        value="${attr(question.question)}"
+                        required
+                    >
+                </label>
+
+                <div class="form-row">
+
+                    <label>
+                        Option A
+                        <input
+                            class="option-a"
+                            value="${attr(question.options[0])}"
+                            required
+                        >
+                    </label>
+
+                    <label>
+                        Option B
+                        <input
+                            class="option-b"
+                            value="${attr(question.options[1])}"
+                            required
+                        >
+                    </label>
+
+                </div>
+
+                <div class="form-row">
+
+                    <label>
+                        Option C
+                        <input
+                            class="option-c"
+                            value="${attr(question.options[2])}"
+                            required
+                        >
+                    </label>
+
+                    <label>
+                        Option D
+                        <input
+                            class="option-d"
+                            value="${attr(question.options[3])}"
+                            required
+                        >
+                    </label>
+
+                </div>
+
+                <label>
+                    Correct Answer
+
+                    <select class="correct-answer" required>
+
+                        <option value="">
+                            Select correct answer
+                        </option>
+
+                        <option value="A" ${question.answer === "A" ? "selected" : ""}>
+                            A
+                        </option>
+
+                        <option value="B" ${question.answer === "B" ? "selected" : ""}>
+                            B
+                        </option>
+
+                        <option value="C" ${question.answer === "C" ? "selected" : ""}>
+                            C
+                        </option>
+
+                        <option value="D" ${question.answer === "D" ? "selected" : ""}>
+                            D
+                        </option>
+
+                    </select>
+                </label>
+
+            </div>
+            `
+        );
+    }
+
+    builder.scrollIntoView({
+        behavior: "smooth"
+    });
+}
+
+// ---------- DELETE EXAM ----------
+
+function deleteExam(id) {
+
+    if (confirm("Delete this examination?")) {
+
+        const exams = getExams().filter(function(exam) {
+            return exam.id !== id;
+        });
+
+        saveExams(exams);
+
+        dashboard();
+    }
+}
+
+// ===============================
+// CREATE EXAM
+// ===============================
+
+if (createExamForm) {
+
+    createExamForm.onsubmit = function(e) {
+
+        e.preventDefault();
+
+        const examNameInput =
+            document.getElementById("examName");
+
+        const examSubjectInput =
+            document.getElementById("examSubject");
+
+        const examCodeInput =
+            document.getElementById("examCode");
+
+        const examDurationInput =
+            document.getElementById("examDuration");
+
+        const numberOfQuestionsInput =
+            document.getElementById("numberOfQuestions");
+
+        const code =
+            examCodeInput.value.trim().toUpperCase();
+
+        const exams = getExams();
+
+        if (
+            exams.some(function(exam) {
+                return exam.code === code;
+            })
+        ) {
+            alert("That exam code already exists.");
+            return;
+        }
+
+        const exam = {
+
+            id: Date.now(),
+
+            name: examNameInput.value.trim(),
+
+            subject: examSubjectInput.value.trim(),
+
+            code: code,
+
+            duration: Number(examDurationInput.value),
+
+            numberOfQuestions:
+                Number(numberOfQuestionsInput.value),
+
+            questions: []
+        };
+
+        exams.push(exam);
+
+        saveExams(exams);
+
+        createExamForm.reset();
+
+        dashboard();
+
+        openBuilder(exam.id);
+    };
+}
+
+// ===============================
+// SAVE QUESTIONS
+// ===============================
+
+const questionBuilderForm =
+    document.getElementById("questionBuilderForm");
+
+if (questionBuilderForm) {
+
+    questionBuilderForm.onsubmit = function(e) {
+
+        e.preventDefault();
+
+        const exams = getExams();
+
+        const exam = exams.find(function(item) {
+            return item.id === editingId;
+        });
+
+        if (!exam) {
+            alert("Examination not found.");
+            return;
+        }
+
+        const cards = [
+            ...fields.querySelectorAll(".question-builder-card")
+        ];
+
+        exam.questions = cards.map(function(card) {
+
+            return {
+
+                question:
+                    card.querySelector(".question-input")
+                        .value.trim(),
+
+                options: [
+
+                    card.querySelector(".option-a")
+                        .value.trim(),
+
+                    card.querySelector(".option-b")
+                        .value.trim(),
+
+                    card.querySelector(".option-c")
+                        .value.trim(),
+
+                    card.querySelector(".option-d")
+                        .value.trim()
+
+                ],
+
+                answer:
+                    card.querySelector(".correct-answer")
+                        .value
+            };
+        });
+
+        saveExams(exams);
+
+        alert(
+            "Questions saved. The examination is ready."
+        );
+
+        builder.classList.add("hidden");
+
+        dashboard();
+    };
+}
+
+// ---------- CREATE EXAM BUTTON ----------
+
+const focusCreate =
+    document.getElementById("focusCreate");
+
+if (focusCreate) {
+
+    focusCreate.onclick = function() {
+
+        const section =
+            document.getElementById("createExamSection");
+
+        if (section) {
+
+            section.scrollIntoView({
+                behavior: "smooth"
+            });
+        }
+    };
+}
+
+// ---------- LOAD DASHBOARD ----------
+
+if (examList) {
+    dashboard();
+}
+
+// ===============================
+// STUDENT LOGIN
+// ===============================
+
+const studentLoginForm =
+    document.getElementById("studentLoginForm");
+
+if (studentLoginForm) {
+
+    studentLoginForm.onsubmit = function(e) {
+
+        e.preventDefault();
+
+        const examCodeInput =
+            document.getElementById("examCode");
+
+        const studentNameInput =
+            document.getElementById("studentName");
+
+        const studentIdInput =
+            document.getElementById("studentId");
+
+        const code =
+            examCodeInput.value.trim().toUpperCase();
+
+        const exams = getExams();
+
+        const exam = exams.find(function(item) {
+            return item.code === code;
+        });
+
+        if (!exam) {
+
+            alert("Exam code not found.");
+
+            return;
+        }
+
+        if (
+            exam.questions.length !==
+            exam.numberOfQuestions
+        ) {
+
+            alert(
+                "This examination is not ready yet. Please contact the administrator."
+            );
+
+            return;
+        }
+
+        const student = {
+
+            name: studentNameInput.value.trim(),
+
+            id: studentIdInput.value.trim()
+        };
+
+        localStorage.setItem(
+            "currentStudent",
+            JSON.stringify(student)
+        );
+
+        localStorage.setItem(
+            "currentExamId",
+            exam.id
+        );
+
+        window.location.href = "exam.html";
+    };
+}
+
+// ===============================
+// EX
