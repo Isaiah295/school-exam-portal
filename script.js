@@ -1,9 +1,14 @@
-// ===============================
+// =====================================================
+// EXAMPRO - MAIN JAVASCRIPT
+// =====================================================
+
+// =====================================================
 // SUPABASE CONNECTION
-// ===============================
+// =====================================================
 
 const SUPABASE_URL = "https://etlprlshdntcddgtfcbo.supabase.co";
-const SUPABASE_KEY = "sb_publishable_vNcV7EwWNV31yD-cEy6g9g_UkYtT8TL";
+
+const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
 
 async function saveExamToSupabase(record) {
     try {
@@ -31,16 +36,16 @@ async function saveExamToSupabase(record) {
         return true;
 
     } catch (error) {
-        console.error("Connection error:", error);
+        console.error("Supabase connection error:", error);
         return false;
     }
 }
 
-// ===============================
-// EXAMPRO - MAIN JAVASCRIPT
-// ===============================
 
-// ---------- STORAGE ----------
+// =====================================================
+// STORAGE
+// =====================================================
+
 function getExams() {
     return JSON.parse(localStorage.getItem("exams") || "[]");
 }
@@ -57,206 +62,253 @@ function saveResults(results) {
     localStorage.setItem("results", JSON.stringify(results));
 }
 
-// ---------- SECURITY HELPERS ----------
+
+// =====================================================
+// SECURITY HELPERS
+// =====================================================
+
 function esc(value) {
-    return String(value ?? "").replace(/[&<>"']/g, function(char) {
-        return {
+    return String(value ?? "").replace(
+        /[&<>"']/g,
+        char => ({
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#039;"
-        }[char];
-    });
+        }[char])
+    );
 }
 
 function attr(value) {
     return esc(value);
 }
 
-// ===============================
+
+// =====================================================
 // ADMIN LOGIN
-// ===============================
+// =====================================================
 
 const adminLoginForm = document.getElementById("adminLoginForm");
 
 if (adminLoginForm) {
+
     adminLoginForm.onsubmit = function(e) {
+
         e.preventDefault();
 
-        const username = document.getElementById("adminUsername").value.trim();
-        const password = document.getElementById("adminPassword").value;
+        const username =
+            document.getElementById("adminUsername").value.trim();
+
+        const password =
+            document.getElementById("adminPassword").value;
 
         if (username === "admin" && password === "12345") {
+
             localStorage.setItem("adminLoggedIn", "true");
-            window.location.href = "admin-dashboard.html";
+
+            location.href = "admin-dashboard.html";
+
         } else {
+
             alert("Invalid username or password.");
+
         }
     };
 }
 
-// ===============================
-// ADMIN DASHBOARD
-// ===============================
 
-const createExamForm = document.getElementById("createExamForm");
+// =====================================================
+// ADMIN DASHBOARD
+// =====================================================
+
+const createExamForm =
+    document.getElementById("createExamForm");
 
 if (
     createExamForm &&
     localStorage.getItem("adminLoggedIn") !== "true"
 ) {
-    window.location.href = "admin-login.html";
+    location.href = "admin-login.html";
 }
 
-// ---------- LOGOUT ----------
 
-const logoutButton = document.getElementById("adminLogout");
+const logout =
+    document.getElementById("adminLogout");
 
-if (logoutButton) {
-    logoutButton.onclick = function() {
+if (logout) {
+
+    logout.onclick = () => {
+
         localStorage.removeItem("adminLoggedIn");
-        window.location.href = "admin-login.html";
+
+        location.href = "admin-login.html";
+
     };
 }
 
-// ---------- DASHBOARD ELEMENTS ----------
 
-const examList = document.getElementById("examList");
-const builder = document.getElementById("questionBuilderSection");
-const fields = document.getElementById("questionFields");
+// =====================================================
+// DASHBOARD
+// =====================================================
+
+const examList =
+    document.getElementById("examList");
+
+const builder =
+    document.getElementById("questionBuilderSection");
+
+const fields =
+    document.getElementById("questionFields");
 
 let editingId = null;
 
-// ---------- DASHBOARD ----------
 
 function dashboard() {
+
     const exams = getExams();
+
     const results = getResults();
 
-    function setText(id, value) {
-        const element = document.getElementById(id);
+    const set = (id, value) => {
+
+        const element =
+            document.getElementById(id);
 
         if (element) {
             element.textContent = value;
         }
-    }
+    };
 
-    setText("totalExams", exams.length);
 
-    setText(
+    set("totalExams", exams.length);
+
+    set(
         "totalQuestions",
-        exams.reduce(function(total, exam) {
-            return total + (exam.questions?.length || 0);
-        }, 0)
+        exams.reduce(
+            (number, exam) =>
+                number + (exam.questions?.length || 0),
+            0
+        )
     );
 
-    setText(
+    set(
         "totalStudents",
-        new Set(results.map(function(result) {
-            return result.studentId;
-        })).size
+        new Set(
+            results.map(result => result.studentId)
+        ).size
     );
 
-    setText("totalResults", results.length);
+    set("totalResults", results.length);
+
 
     if (examList) {
-        if (exams.length) {
-            examList.innerHTML = exams.map(function(exam) {
-                return `
-                    <div class="exam-card">
-                        <div>
-                            <h3>${esc(exam.name)}</h3>
 
-                            <div class="exam-meta">
-                                ${esc(exam.subject)}
-                                · Code: ${esc(exam.code)}
-                                · ${exam.duration} minutes
-                                · ${exam.questions.length}/${exam.numberOfQuestions} questions
-                            </div>
+        examList.innerHTML = exams.length
+            ? exams.map(exam => `
+                <div class="exam-card">
+
+                    <div>
+
+                        <h3>${esc(exam.name)}</h3>
+
+                        <div class="exam-meta">
+                            ${esc(exam.subject)}
+                            · Code: ${esc(exam.code)}
+                            · ${exam.duration} minutes
+                            · ${exam.questions.length}/${exam.numberOfQuestions} questions
                         </div>
 
-                        <div class="exam-actions">
-                            <button class="small-btn" data-q="${exam.id}">
-                                Questions
-                            </button>
-
-                            <button class="small-btn danger" data-d="${exam.id}">
-                                Delete
-                            </button>
-                        </div>
                     </div>
-                `;
-            }).join("");
-        } else {
-            examList.innerHTML = `
+
+                    <div class="exam-actions">
+
+                        <button
+                            class="small-btn"
+                            data-q="${exam.id}">
+                            Questions
+                        </button>
+
+                        <button
+                            class="small-btn danger"
+                            data-d="${exam.id}">
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `).join("")
+
+            : `
                 <div class="empty-state">
                     📝<br>
                     <b>No examinations yet</b><br>
                     Create your first examination above.
                 </div>
             `;
-        }
 
-        examList.querySelectorAll("[data-q]").forEach(function(button) {
-            button.onclick = function() {
-                openBuilder(Number(button.dataset.q));
-            };
-        });
 
-        examList.querySelectorAll("[data-d]").forEach(function(button) {
-            button.onclick = function() {
-                deleteExam(Number(button.dataset.d));
-            };
-        });
+        examList
+            .querySelectorAll("[data-q]")
+            .forEach(button => {
+
+                button.onclick = () =>
+                    openBuilder(+button.dataset.q);
+
+            });
+
+
+        examList
+            .querySelectorAll("[data-d]")
+            .forEach(button => {
+
+                button.onclick = () =>
+                    delExam(+button.dataset.d);
+
+            });
     }
 }
 
-// ===============================
+
+// =====================================================
 // QUESTION BUILDER
-// ===============================
+// =====================================================
 
 function openBuilder(id) {
-    const exams = getExams();
 
-    const exam = exams.find(function(item) {
-        return item.id === id;
-    });
+    const exam =
+        getExams().find(item => item.id === id);
 
-    if (!exam) {
-        return;
-    }
+    if (!exam) return;
 
     editingId = id;
 
-    if (builder) {
-        builder.classList.remove("hidden");
-    }
+    builder.classList.remove("hidden");
 
-    const builderSubtitle =
-        document.getElementById("builderSubtitle");
-
-    if (builderSubtitle) {
-        builderSubtitle.textContent =
-            `${exam.name} — add ${exam.numberOfQuestions} question(s).`;
-    }
-
-    if (!fields) {
-        return;
-    }
+    document.getElementById("builderSubtitle").textContent =
+        `${exam.name} — add ${exam.numberOfQuestions} question(s).`;
 
     fields.innerHTML = "";
 
-    for (let i = 0; i < exam.numberOfQuestions; i++) {
 
-        const question = exam.questions[i] || {
-            question: "",
-            options: ["", "", "", ""],
-            answer: ""
-        };
+    for (
+        let i = 0;
+        i < exam.numberOfQuestions;
+        i++
+    ) {
+
+        const question =
+            exam.questions[i] || {
+                question: "",
+                options: ["", "", "", ""],
+                answer: ""
+            };
+
 
         fields.insertAdjacentHTML(
             "beforeend",
+
             `
             <div class="question-builder-card">
 
@@ -267,9 +319,9 @@ function openBuilder(id) {
                     <input
                         class="question-input"
                         value="${attr(question.question)}"
-                        required
-                    >
+                        required>
                 </label>
+
 
                 <div class="form-row">
 
@@ -278,8 +330,7 @@ function openBuilder(id) {
                         <input
                             class="option-a"
                             value="${attr(question.options[0])}"
-                            required
-                        >
+                            required>
                     </label>
 
                     <label>
@@ -287,11 +338,11 @@ function openBuilder(id) {
                         <input
                             class="option-b"
                             value="${attr(question.options[1])}"
-                            required
-                        >
+                            required>
                     </label>
 
                 </div>
+
 
                 <div class="form-row">
 
@@ -300,8 +351,7 @@ function openBuilder(id) {
                         <input
                             class="option-c"
                             value="${attr(question.options[2])}"
-                            required
-                        >
+                            required>
                     </label>
 
                     <label>
@@ -309,38 +359,35 @@ function openBuilder(id) {
                         <input
                             class="option-d"
                             value="${attr(question.options[3])}"
-                            required
-                        >
+                            required>
                     </label>
 
                 </div>
 
+
                 <label>
                     Correct Answer
 
-                    <select class="correct-answer" required>
+                    <select
+                        class="correct-answer"
+                        required>
 
                         <option value="">
                             Select correct answer
                         </option>
 
-                        <option value="A" ${question.answer === "A" ? "selected" : ""}>
-                            A
-                        </option>
-
-                        <option value="B" ${question.answer === "B" ? "selected" : ""}>
-                            B
-                        </option>
-
-                        <option value="C" ${question.answer === "C" ? "selected" : ""}>
-                            C
-                        </option>
-
-                        <option value="D" ${question.answer === "D" ? "selected" : ""}>
-                            D
-                        </option>
+                        ${["A", "B", "C", "D"]
+                            .map(letter => `
+                                <option
+                                    value="${letter}"
+                                    ${question.answer === letter ? "selected" : ""}>
+                                    ${letter}
+                                </option>
+                            `)
+                            .join("")}
 
                     </select>
+
                 </label>
 
             </div>
@@ -348,30 +395,31 @@ function openBuilder(id) {
         );
     }
 
+
     builder.scrollIntoView({
         behavior: "smooth"
     });
 }
 
-// ---------- DELETE EXAM ----------
 
-function deleteExam(id) {
+function delExam(id) {
 
     if (confirm("Delete this examination?")) {
 
-        const exams = getExams().filter(function(exam) {
-            return exam.id !== id;
-        });
-
-        saveExams(exams);
+        saveExams(
+            getExams().filter(
+                exam => exam.id !== id
+            )
+        );
 
         dashboard();
     }
 }
 
-// ===============================
+
+// =====================================================
 // CREATE EXAM
-// ===============================
+// =====================================================
 
 if (createExamForm) {
 
@@ -379,52 +427,62 @@ if (createExamForm) {
 
         e.preventDefault();
 
-        const examNameInput =
-            document.getElementById("examName");
-
-        const examSubjectInput =
-            document.getElementById("examSubject");
-
-        const examCodeInput =
-            document.getElementById("examCode");
-
-        const examDurationInput =
-            document.getElementById("examDuration");
-
-        const numberOfQuestionsInput =
-            document.getElementById("numberOfQuestions");
 
         const code =
-            examCodeInput.value.trim().toUpperCase();
+            document
+                .getElementById("examCode")
+                .value
+                .trim()
+                .toUpperCase();
+
 
         const exams = getExams();
 
+
         if (
-            exams.some(function(exam) {
-                return exam.code === code;
-            })
+            exams.some(
+                exam => exam.code === code
+            )
         ) {
+
             alert("That exam code already exists.");
+
             return;
         }
+
 
         const exam = {
 
             id: Date.now(),
 
-            name: examNameInput.value.trim(),
+            name:
+                document
+                    .getElementById("examName")
+                    .value
+                    .trim(),
 
-            subject: examSubjectInput.value.trim(),
+            subject:
+                document
+                    .getElementById("examSubject")
+                    .value
+                    .trim(),
 
             code: code,
 
-            duration: Number(examDurationInput.value),
+            duration:
+                +document
+                    .getElementById("examDuration")
+                    .value,
 
             numberOfQuestions:
-                Number(numberOfQuestionsInput.value),
+                +document
+                    .getElementById("numberOfQuestions")
+                    .value,
 
             questions: []
+
         };
+
 
         exams.push(exam);
 
@@ -438,63 +496,67 @@ if (createExamForm) {
     };
 }
 
-// ===============================
-// SAVE QUESTIONS
-// ===============================
 
-const questionBuilderForm =
+// =====================================================
+// SAVE QUESTIONS
+// =====================================================
+
+const qform =
     document.getElementById("questionBuilderForm");
 
-if (questionBuilderForm) {
 
-    questionBuilderForm.onsubmit = function(e) {
+if (qform) {
+
+    qform.onsubmit = function(e) {
 
         e.preventDefault();
 
+
         const exams = getExams();
 
-        const exam = exams.find(function(item) {
-            return item.id === editingId;
-        });
+        const exam =
+            exams.find(
+                item => item.id === editingId
+            );
 
-        if (!exam) {
-            alert("Examination not found.");
-            return;
-        }
 
-        const cards = [
-            ...fields.querySelectorAll(".question-builder-card")
-        ];
+        const cards =
+            [
+                ...fields.querySelectorAll(
+                    ".question-builder-card"
+                )
+            ];
 
-        exam.questions = cards.map(function(card) {
 
-            return {
+        exam.questions =
+            cards.map(card => ({
 
                 question:
-                    card.querySelector(".question-input")
-                        .value.trim(),
+                    card
+                        .querySelector(".question-input")
+                        .value
+                        .trim(),
 
                 options: [
-
-                    card.querySelector(".option-a")
-                        .value.trim(),
-
-                    card.querySelector(".option-b")
-                        .value.trim(),
-
-                    card.querySelector(".option-c")
-                        .value.trim(),
-
-                    card.querySelector(".option-d")
-                        .value.trim()
-
-                ],
+                    ".option-a",
+                    ".option-b",
+                    ".option-c",
+                    ".option-d"
+                ].map(
+                    selector =>
+                        card
+                            .querySelector(selector)
+                            .value
+                            .trim()
+                ),
 
                 answer:
-                    card.querySelector(".correct-answer")
+                    card
+                        .querySelector(".correct-answer")
                         .value
-            };
-        });
+
+            }));
+
 
         saveExams(exams);
 
@@ -502,45 +564,45 @@ if (questionBuilderForm) {
             "Questions saved. The examination is ready."
         );
 
+
         builder.classList.add("hidden");
 
         dashboard();
     };
 }
 
-// ---------- CREATE EXAM BUTTON ----------
+
+// =====================================================
+// CREATE EXAM BUTTON
+// =====================================================
 
 const focusCreate =
     document.getElementById("focusCreate");
 
+
 if (focusCreate) {
 
-    focusCreate.onclick = function() {
-
-        const section =
-            document.getElementById("createExamSection");
-
-        if (section) {
-
-            section.scrollIntoView({
+    focusCreate.onclick = () =>
+        document
+            .getElementById("createExamSection")
+            .scrollIntoView({
                 behavior: "smooth"
             });
-        }
-    };
 }
 
-// ---------- LOAD DASHBOARD ----------
 
 if (examList) {
     dashboard();
 }
 
-// ===============================
+
+// =====================================================
 // STUDENT LOGIN
-// ===============================
+// =====================================================
 
 const studentLoginForm =
     document.getElementById("studentLoginForm");
+
 
 if (studentLoginForm) {
 
@@ -548,23 +610,20 @@ if (studentLoginForm) {
 
         e.preventDefault();
 
-        const examCodeInput =
-            document.getElementById("examCode");
-
-        const studentNameInput =
-            document.getElementById("studentName");
-
-        const studentIdInput =
-            document.getElementById("studentId");
 
         const code =
-            examCodeInput.value.trim().toUpperCase();
+            document
+                .getElementById("examCode")
+                .value
+                .trim()
+                .toUpperCase();
 
-        const exams = getExams();
 
-        const exam = exams.find(function(item) {
-            return item.code === code;
-        });
+        const exam =
+            getExams().find(
+                item => item.code === code
+            );
+
 
         if (!exam) {
 
@@ -572,6 +631,7 @@ if (studentLoginForm) {
 
             return;
         }
+
 
         if (
             exam.questions.length !==
@@ -585,317 +645,397 @@ if (studentLoginForm) {
             return;
         }
 
-        const student = {
-
-            name: studentNameInput.value.trim(),
-
-            id: studentIdInput.value.trim()
-        };
 
         localStorage.setItem(
             "currentStudent",
-            JSON.stringify(student)
+            JSON.stringify({
+
+                name:
+                    document
+                        .getElementById("studentName")
+                        .value
+                        .trim(),
+
+                id:
+                    document
+                        .getElementById("studentId")
+                        .value
+                        .trim()
+
+            })
         );
+
 
         localStorage.setItem(
             "currentExamId",
             exam.id
         );
 
-        window.location.href = "exam.html";
+
+        location.href = "exam.html";
     };
 }
 
-// ===============================
-// EXAM PAGE
-// ===============================
+
+// =====================================================
+// EXAM ENGINE
+// =====================================================
 
 const questionText =
     document.getElementById("questionText");
 
+
 if (questionText) {
 
     const exam =
-        getExams().find(function(item) {
+        getExams().find(
+            item =>
+                String(item.id) ===
+                localStorage.getItem("currentExamId")
+        );
 
-            return String(item.id) ===
-                localStorage.getItem("currentExamId");
-        });
 
     const student =
         JSON.parse(
-            localStorage.getItem("currentStudent") || "null"
+            localStorage.getItem("currentStudent") ||
+            "null"
         );
+
 
     if (!exam || !student) {
 
-        window.location.href =
-            "student-login.html";
+        location.href = "student-login.html";
 
     } else {
 
         let currentIndex = 0;
 
         const answers =
-            new Array(exam.questions.length).fill(null);
+            new Array(
+                exam.questions.length
+            ).fill(null);
+
 
         let seconds =
             exam.duration * 60;
 
+
         let finished = false;
 
-        const examTitle =
-            document.getElementById("examTitle");
 
-        const examSubject =
-            document.getElementById("examSubject");
-
-        const studentDisplay =
-            document.getElementById("studentDisplay");
-
-        const totalQuestions =
-            document.getElementById("totalQuestions");
-
-        const currentQuestion =
-            document.getElementById("currentQuestion");
-
-        const questionNumber =
-            document.getElementById("questionNumber");
-
-        const options =
-            document.getElementById("options");
-
-        const questionNumbers =
-            document.getElementById("questionNumbers");
-
-        const previousButton =
-            document.getElementById("previousBtn");
-
-        const nextButton =
-            document.getElementById("nextBtn");
-
-        const submitButton =
-            document.getElementById("submitExam");
-
-        const timer =
-            document.getElementById("timer");
-
-        examTitle.textContent =
+        document.getElementById("examTitle").textContent =
             exam.name;
 
-        examSubject.textContent =
+
+        document.getElementById("examSubject").textContent =
             exam.subject;
 
-        studentDisplay.textContent =
+
+        document.getElementById("studentDisplay").textContent =
             student.name;
 
-        totalQuestions.textContent =
+
+        document.getElementById("totalQuestions").textContent =
             exam.questions.length;
 
+
+        const questionNumbers =
+            document.getElementById(
+                "questionNumbers"
+            );
+
+
+        const options =
+            document.getElementById(
+                "options"
+            );
+
+
         questionNumbers.innerHTML =
-            exam.questions.map(function(_, index) {
+            exam.questions
+                .map(
+                    (_, index) =>
+                        `<button data-i="${index}">
+                            ${index + 1}
+                        </button>`
+                )
+                .join("");
 
-                return `
-                    <button data-i="${index}">
-                        ${index + 1}
-                    </button>
-                `;
-
-            }).join("");
 
         questionNumbers
             .querySelectorAll("button")
-            .forEach(function(button) {
+            .forEach(button => {
 
-                button.onclick = function() {
+                button.onclick = () => {
 
                     currentIndex =
-                        Number(button.dataset.i);
+                        +button.dataset.i;
 
                     loadQuestion();
+
                 };
+
             });
+
 
         function loadQuestion() {
 
             const question =
                 exam.questions[currentIndex];
 
-            currentQuestion.textContent =
+
+            document.getElementById(
+                "currentQuestion"
+            ).textContent =
                 currentIndex + 1;
 
-            questionNumber.textContent =
+
+            document.getElementById(
+                "questionNumber"
+            ).textContent =
                 currentIndex + 1;
+
 
             questionText.textContent =
                 question.question;
 
+
             options.innerHTML =
-                question.options.map(function(option, index) {
+                question.options
+                    .map((option, index) => {
 
-                    const letter =
-                        String.fromCharCode(65 + index);
+                        const letter =
+                            String.fromCharCode(
+                                65 + index
+                            );
 
-                    return `
-                        <label class="option ${
-                            answers[currentIndex] === letter
-                                ? "selected"
-                                : ""
-                        }">
 
-                            <input
-                                type="radio"
-                                name="answer"
-                                value="${letter}"
-                                ${
+                        return `
+                            <label
+                                class="option ${
                                     answers[currentIndex] === letter
-                                        ? "checked"
+                                        ? "selected"
                                         : ""
-                                }
-                            >
+                                }">
 
-                            <b>${letter}</b>
+                                <input
+                                    type="radio"
+                                    name="answer"
+                                    value="${letter}"
+                                    ${
+                                        answers[currentIndex] === letter
+                                            ? "checked"
+                                            : ""
+                                    }>
 
-                            <span>
-                                ${esc(option)}
-                            </span>
+                                <b>${letter}</b>
 
-                        </label>
-                    `;
+                                <span>
+                                    ${esc(option)}
+                                </span>
 
-                }).join("");
+                            </label>
+                        `;
+
+                    })
+                    .join("");
+
 
             options
                 .querySelectorAll("input")
-                .forEach(function(radio) {
+                .forEach(radio => {
 
-                    radio.onchange = function() {
+                    radio.onchange = () => {
 
                         answers[currentIndex] =
                             radio.value;
 
                         loadQuestion();
+
                     };
+
                 });
+
 
             questionNumbers
                 .querySelectorAll("button")
-                .forEach(function(button, index) {
+                .forEach((button, index) => {
 
                     button.classList.toggle(
                         "active",
                         index === currentIndex
                     );
 
+
                     button.classList.toggle(
                         "answered",
                         !!answers[index]
                     );
+
                 });
 
-            previousButton.disabled =
+
+            document.getElementById(
+                "previousBtn"
+            ).disabled =
                 currentIndex === 0;
 
-            nextButton.textContent =
-                currentIndex === exam.questions.length - 1
+
+            document.getElementById(
+                "nextBtn"
+            ).textContent =
+                currentIndex ===
+                exam.questions.length - 1
                     ? "Finish"
                     : "Next →";
         }
 
-        function updateTimer() {
+
+        function tick() {
 
             const minutes =
                 Math.floor(seconds / 60);
 
-            const remainingSeconds =
+            const secs =
                 seconds % 60;
 
-            timer.textContent =
-                `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 
-            if (seconds <= 0) {
+            document.getElementById(
+                "timer"
+            ).textContent =
+                `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
-                finishExam();
+                     if (seconds <= 0) {
+
+                finish();
 
                 return;
             }
+
 
             seconds--;
         }
 
-        const timerInterval =
-            setInterval(updateTimer, 1000);
 
-        updateTimer();
+        const timerInterval =
+            setInterval(
+                tick,
+                1000
+            );
+
+
+        tick();
 
         loadQuestion();
 
-        previousButton.onclick =
-            function() {
 
-                if (currentIndex > 0) {
+        document.getElementById(
+            "previousBtn"
+        ).onclick = () => {
 
-                    currentIndex--;
+            if (currentIndex > 0) {
 
-                    loadQuestion();
-                }
-            };
+                currentIndex--;
 
-        nextButton.onclick =
-            function() {
+                loadQuestion();
 
-                if (
-                    currentIndex <
-                    exam.questions.length - 1
-                ) {
-
-                    currentIndex++;
-
-                    loadQuestion();
-
-                } else {
-
-                    finishExam();
-                }
-            };
-
-        submitButton.onclick =
-            function() {
-
-                if (
-                    confirm(
-                        "Submit your examination now?"
-                    )
-                ) {
-
-                    finishExam();
-                }
-            };
-
-        function finishExam() {
-
-            if (finished) {
-                return;
             }
+        };
+
+
+        document.getElementById(
+            "nextBtn"
+        ).onclick = () => {
+
+            if (
+                currentIndex <
+                exam.questions.length - 1
+            ) {
+
+                currentIndex++;
+
+                loadQuestion();
+
+            } else {
+
+                finish();
+
+            }
+        };
+
+
+        document.getElementById(
+            "submitExam"
+        ).onclick = () => {
+
+            if (
+                confirm(
+                    "Submit your examination now?"
+                )
+            ) {
+
+                finish();
+
+            }
+        };
+
+
+        // =================================================
+        // FINISH EXAM
+        // =================================================
+
+        async function finish() {
+
+            if (finished) return;
 
             finished = true;
 
             clearInterval(timerInterval);
 
-            let correct = 0;
 
-            exam.questions.forEach(
-                function(question, index) {
+            const correct =
+                exam.questions.reduce(
+                    (total, question, index) =>
+                        total +
+                        (
+                            answers[index] ===
+                            question.answer
+                                ? 1
+                                : 0
+                        ),
+                    0
+                );
 
-                    if (
-                        answers[index] ===
-                        question.answer
-                    ) {
-                        correct++;
-                    }
-                }
-            );
 
+            const total =
+                exam.questions.length;
+
+
+            const percentage =
+                Math.round(
+                    (correct / total) * 100
+                );
+
+
+            // Grade
+            let grade;
+
+            if (percentage >= 70) {
+                grade = "A";
+            } else if (percentage >= 60) {
+                grade = "B";
+            } else if (percentage >= 50) {
+                grade = "C";
+            } else if (percentage >= 45) {
+                grade = "D";
+            } else if (percentage >= 40) {
+                grade = "E";
+            } else {
+                grade = "F";
+            }
+
+
+            // Local result
             const result = {
 
                 id: Date.now(),
@@ -909,88 +1049,155 @@ if (questionText) {
                 examName:
                     exam.name,
 
+                examCode:
+                    exam.code,
+
                 score:
-                    Math.round(
-                        correct /
-                        exam.questions.length *
-                        100
-                    ),
+                    correct,
 
                 correct:
                     correct,
 
                 total:
-                    exam.questions.length,
+                    total,
+
+                percentage:
+                    percentage,
+
+                grade:
+                    grade,
 
                 date:
                     new Date().toISOString()
+
             };
 
+
+            // Keep existing localStorage system
             const results =
                 getResults();
+
 
             results.push(result);
 
             saveResults(results);
+
 
             localStorage.setItem(
                 "lastResult",
                 JSON.stringify(result)
             );
 
-            window.location.href =
+
+            // =================================================
+            // SAVE PERMANENT ONLINE RECORD TO SUPABASE
+            // =================================================
+
+            const onlineRecord = {
+
+                student_name:
+                    student.name,
+
+                student_id:
+                    student.id,
+
+                exam_name:
+                    exam.name,
+
+                exam_code:
+                    exam.code,
+
+                score:
+                    correct,
+
+                total_questions:
+                    total,
+
+                percentage:
+                    percentage,
+
+                grade:
+                    grade,
+
+                submitted_at:
+                    new Date().toISOString()
+
+            };
+
+
+            const savedOnline =
+                await saveExamToSupabase(
+                    onlineRecord
+                );
+
+
+            if (!savedOnline) {
+
+                alert(
+                    "Your exam result was calculated, but the online record could not be saved. Please inform the administrator."
+                );
+
+            }
+
+
+            location.href =
                 "result.html";
         }
     }
 }
 
-// ===============================
+
+// =====================================================
 // RESULT PAGE
-// ===============================
+// =====================================================
 
 const resultScore =
-    document.getElementById("resultScore");
+    document.getElementById(
+        "resultScore"
+    );
+
 
 if (resultScore) {
 
     const result =
         JSON.parse(
-            localStorage.getItem("lastResult") ||
-            "null"
+            localStorage.getItem(
+                "lastResult"
+            ) || "null"
         );
+
 
     if (!result) {
 
-        window.location.href =
-            "index.html";
+        location.href = "index.html";
 
     } else {
 
-        const resultTitle =
-            document.getElementById("resultTitle");
-
-        const resultStudent =
-            document.getElementById("resultStudent");
-
-        const resultCorrect =
-            document.getElementById("resultCorrect");
-
-        const resultTotal =
-            document.getElementById("resultTotal");
-
-        resultTitle.textContent =
+        document.getElementById(
+            "resultTitle"
+        ).textContent =
             result.examName;
 
-        resultStudent.textContent =
+
+        document.getElementById(
+            "resultStudent"
+        ).textContent =
             `${result.studentName} · ${result.studentId}`;
 
-        resultScore.textContent =
-            `${result.score}%`;
 
-        resultCorrect.textContent =
+        resultScore.textContent =
+            `${result.percentage ?? result.score}%`;
+
+
+        document.getElementById(
+            "resultCorrect"
+        ).textContent =
             result.correct;
 
-        resultTotal.textContent =
+
+        document.getElementById(
+            "resultTotal"
+        ).textContent =
             result.total;
     }
-}
+                                                       }
