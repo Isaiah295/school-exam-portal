@@ -3,7 +3,7 @@
 // ===============================
 
 const SUPABASE_URL = "https://etlprlshdntcddgtfcbo.supabase.co";
-const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+const SUPABASE_KEY = "sb_publishable_vNcV7EwWNV31yD-cEy6g9g_UkYtT8TL";
 
 async function saveExamToSupabase(record) {
     try {
