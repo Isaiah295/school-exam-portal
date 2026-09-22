@@ -1,4 +1,42 @@
 // ===============================
+// SUPABASE CONNECTION
+// ===============================
+
+const SUPABASE_URL = "https://etlprlshdntcddgtfcbo.supabase.co";
+const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+
+async function saveExamToSupabase(record) {
+    try {
+        const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/exam_records`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": `Bearer ${SUPABASE_KEY}`,
+                    "Prefer": "return=minimal"
+                },
+                body: JSON.stringify(record)
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.text();
+            console.error("Supabase error:", error);
+            return false;
+        }
+
+        console.log("Exam record saved successfully.");
+        return true;
+
+    } catch (error) {
+        console.error("Connection error:", error);
+        return false;
+    }
+}
+
+// ===============================
 // EXAMPRO - MAIN JAVASCRIPT
 // ===============================
 
